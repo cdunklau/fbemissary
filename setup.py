@@ -26,7 +26,7 @@ description = (
 setup(
     name='fbemissary',
     version='0.0.1',
-    description=desciption,
+    description=description,
     author='Colin Dunklau',
     author_email='colin.dunklau@gmail.com',
     url='https://github.com/cdunklau/fbemissary',
