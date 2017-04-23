@@ -75,6 +75,10 @@ class Conversation:
         while self._events:
             event = self._events.pop()
             try:
+                # TODO: Make a decision here. Should the messaging
+                #       handling just add stuff to the conversationalist,
+                #       or actually wait for each event to be handled
+                #       before giving the next one (as it does now)?
                 await self._conversationalist.handle_messaging_event(event)
             except Exception:
                 logger.exception(
