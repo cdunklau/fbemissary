@@ -1,6 +1,9 @@
 # Licensed under the Apache License:
 #     http://www.apache.org/licenses/LICENSE-2.0
 # For details: https://github.com/cdunklau/fbemissary/blob/master/NOTICE.txt
+"""
+Facebook Messenger Platform API clients
+"""
 import urllib.parse
 import logging
 
@@ -9,6 +12,9 @@ logger = logging.getLogger(__name__)
 
 
 class PageMessagingAPIClient:
+    """
+    Client for Facebook Messenger's Send API.
+    """
     def __init__(self, session, page_access_token):
         graph_api_version = 'v2.8'
         self._base_url = 'https://graph.facebook.com/{ver}/'.format(
@@ -36,6 +42,12 @@ class PageMessagingAPIClient:
 
 
 class ConversationReplierAPIClient:
+    """
+    Wrapper around :class:`fbemissary.client.PageMessagingAPIClient`
+    for sending replies back to a specific user in a conversation.
+
+    Passed into the conversationalist factory.
+    """
     def __init__(self, page_messaging_client, recipient_id):
         self._client = page_messaging_client
         self._recipient_id = recipient_id
