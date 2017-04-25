@@ -4,7 +4,7 @@
 """
 fbemissary - A bot framework for the Facebook Messenger platform
 """
-from .core import FacebookPageMessengerBot, FacebookMessengerBotConfig
+from .core import FacebookPageMessengerBot
 from .models import (
     ReceivedMessage,
     AttachmentType,
