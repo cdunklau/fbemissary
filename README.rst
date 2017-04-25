@@ -43,14 +43,12 @@ Example Usage
 
 
     async def start(loop):
-        fbconfig = fbemissary.FacebookMessengerBotConfig(
-            app_id='<APP_ID>',
-            app_secret='<APP_SECRET>',
-            verify_token='<WEBHOOK_VERIFY_TOKEN>',
-            page_access_token='<PAGE_ACCESS_TOKEN>',
         )
         fbmessenger = fbemissary.FacebookPageMessengerBot(
-            fbconfig, EchoConversationalist)
+            EchoConversationalist,
+            app_secret='<APP_SECRET>',
+            verify_token='<WEBHOOK_VERIFY_TOKEN>',
+            page_access_token='<PAGE_ACCESS_TOKEN>')
         webapp = aiohttp.web.Application()
         await fbmessenger.start(
             '/webhooks/facebook-messenger',
