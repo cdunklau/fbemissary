@@ -49,38 +49,16 @@ class Conversation:
     def __init__(self, conversationalist, counterpart_id, *, loop):
         self._conversationalist = conversationalist
         self._counterpart_id = counterpart_id
-        self._events = collections.deque()
         self._loop = loop
-        self._events_available = asyncio.Event(loop=loop)
-        self._task = loop.create_task(self._conversate())
 
     def add_messaging_event(self, event):
-        # Load the event...
-        self._events.appendleft(event)
-        # ...and inform the task it can continue.
-        logger.debug(
-            'Notifying myself that event is available for %r',
-            self._counterpart_id)
-        self._events_available.set()
-
-    async def _conversate(self):
-        logger.info('Started conversation with ID %r', self._counterpart_id)
-        while True:
-            await self._handle_events()
-            self._events_available.clear()
-            await self._events_available.wait()
-
-
-    async def _handle_events(self):
-        while self._events:
-            event = self._events.pop()
-            try:
-                self._conversationalist.handle_messaging_event(event)
-            except Exception:
-                logger.exception(
-                    'Error in handle_messaging_event for conversation '
-                    'with %r',
-                    self._counterpart_id)
+        try:
+            self._conversationalist.handle_messaging_event(event)
+        except Exception:
+            logger.exception(
+                'Error in handle_messaging_event for conversation '
+                'with %r',
+                self._counterpart_id)
 
 
 class SerialConversationalist:
