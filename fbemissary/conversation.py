@@ -93,7 +93,7 @@ class SerialConversationalist:
     ``event_received`` will be called with the event, and awaited.
 
     Attributes:
-        replier (:class:`fbemissary.PageMessagingAPIClient`):
+        replier (:class:`fbemissary.client.PageMessagingAPIClient`):
             The page messaging API client to use for sending
             messages etc. to the user.
         counterpart_id (str):
