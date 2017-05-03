@@ -16,11 +16,47 @@ logger = logging.getLogger(__name__)
 
 class FacebookPageMessengerBot:
     """
-    ``conversationalist_factory`` will be called with an instance of
-    :class:`fbemissary.client.ConversationReplierAPIClient` and
-    the page-scoped ID of the conversation's counterpoint. It must
-    return an object with a ``handle_messaging_event`` coroutine
-    method that accepts a messaging event.
+    ``conversationalist_factory``
+    Arguments:
+        conversationalist_factory:
+            A callable supporting three arguments which returns a
+            "conversationalist" object. A conversationalist is an
+            object that receives messaging events (described in the
+            documentation for :mod:`fbemissary.models`) from a
+            conversation with a single user and replies as needed.
+
+            The interface is described below.
+
+        app_secret (str):
+            The Facebook "app secret". This is available after you
+            set up your app, at https://developers.facebook.com/apps/
+            on the dashboard.
+
+        verify_token (str):
+            The string you gave when you added the webhook
+            subscription. Used by Facebook to verify your bot is
+            actually yours.
+
+        page_access_token (str):
+            The access token for Facebook Page that your app is
+            subscribed to.
+
+
+    The argument ``conversationalist_factory`` will be called with
+    three arguments: an instance of
+    :class:`fbemissary.client.ConversationReplierAPIClient` (for
+    sending messages back to the user), the page-scoped ID of the
+    conversation counterpart (the user on the other end of the
+    conversation), and the event loop.
+
+    The factory must return an object with a
+    ``handle_messaging_event`` method (not a coroutine!) that accepts
+    a messaging event.
+
+    .. todo::
+
+        Add documentation for the included concrete implementations
+        of conversationalist factories.
     """
     def __init__(
             self, conversationalist_factory,
