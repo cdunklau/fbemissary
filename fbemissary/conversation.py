@@ -35,7 +35,7 @@ class MessagingEventDemuxer:
             replier = client.ConversationReplierAPIClient(
                 self._client, counterpart_id)
             conversationalist = self._conversationalist_factory(
-                replier, counterpart_id)
+                replier, counterpart_id, self._loop)
             convo = Conversation(
                 conversationalist, counterpart_id, loop=self._loop)
             self._convos[counterpart_id] = convo
