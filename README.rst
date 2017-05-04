@@ -24,20 +24,16 @@ Example Usage
     logger = logging.getLogger(__name__)
 
 
-    class EchoConversationalist:
-        def __init__(self, replier, counterpart_id):
-            self._replier = replier
-            self._counterpart_id = counterpart_id
-
-        async def handle_messaging_event(self, event):
+    class EchoConversationalist(fbemissary.SerialConversationalist):
+        async def event_received(self, event):
             if (
                     isinstance(event, fbemissary.ReceivedMessage)
                     and event.text is not None
                 ):
                 logger.debug(
                     'Echoing message back to %r',
-                    self._counterpart_id)
-                await self._replier.send_text_message(event.text)
+                    self.counterpart_id)
+                await self.replier.send_text_message(event.text)
             else:
                 logger.warning('Ignoring event {0}'.format(event))
 
