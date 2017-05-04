@@ -60,7 +60,8 @@ class WebhookReceiver:
         key = self._app_secret.encode('ascii')
         verifier = hmac.new(key, msg=content, digestmod='sha1')
         computed_signature = verifier.hexdigest()
-        return signature == computed_signature
+        # Reduce timing attack surface
+        return hmac.compare_digest(signature, computed_signature)
 
 
 class WebhookWrangler:
