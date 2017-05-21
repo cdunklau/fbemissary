@@ -1,6 +1,9 @@
 .. image:: https://img.shields.io/pypi/v/fbemissary.svg
     :target: https://pypi.python.org/pypi/fbemissary
 
+.. image:: https://img.shields.io/pypi/pyversions/fbemissary.svg
+    :target: https://pypi.python.org/pypi/fbemissary
+
 fbemissary
 ##########
 
