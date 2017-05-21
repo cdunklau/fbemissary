@@ -40,15 +40,13 @@ Example Usage
 
 
     async def start(loop):
-        conversationalist_factory_map = collections.defaultdict(
-            lambda: EchoConversationalist)
-        # TODO: Refactor page access token stuff to support multiple
-        #       Pages...
         fbmessenger = fbemissary.FacebookPageMessengerBot(
-            conversationalist_factory_map,
             app_secret='<APP_SECRET>',
-            verify_token='<WEBHOOK_VERIFY_TOKEN>',
-            page_access_token='<PAGE_ACCESS_TOKEN>')
+            verify_token='<WEBHOOK_VERIFY_TOKEN>')
+        fbmessenger.add_conversationalist_factory(
+            page_id='<PAGE_ID>', 
+            page_access_token='<PAGE_ACCESS_TOKEN>',
+            conversationalist_factory=EchoConversationalist)
         webapp = aiohttp.web.Application()
         await fbmessenger.start(
             '/webhooks/facebook-messenger',

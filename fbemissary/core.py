@@ -31,8 +31,8 @@ class FacebookPageMessengerBot:
     def __init__(self, app_secret, verify_token):
         self._app_secret = app_secret
         self._verify_token = verify_token
+        self._message_demuxer = conversation.MessagingEventDemuxer()
         # These are overwritten in start()
-        self._message_demuxer = None
         self._webhook_wrangler = None
         self._receiver = None
         self._sender = None
@@ -43,11 +43,11 @@ class FacebookPageMessengerBot:
         """
         Arguments:
             page_id (str):
-                The Fac
+                The ID for a Facebook Page that your app is subscribed
+                to, which the ``conversationalist_factory`` will handle
             page_access_token (str):
-                The access token for a Facebook Page that your
-                app is subscribed to, which the
-                ``conversationalist_factory`` will handle.
+                The access token for the Facebook Page specified by
+                the ``page_id``
             conversationalist_factory:
                 A Conversationalist Factory is a callable supporting
                 four arguments which returns a "Conversationalist"
@@ -78,18 +78,14 @@ class FacebookPageMessengerBot:
             # TODO: Change this to a custom exception
             raise RuntimeError('Cannot change config after start')
         self._message_demuxer.add_conversationalist_factory(
-            page_id, page_access_token, factory)
+            page_id, page_access_token, conversationalist_factory)
 
     async def start(self, webapp_mountpoint, webapp_router, *, loop):
         if self._started:
             # TODO: Change this to a custom exception
             raise RuntimeError('Cannot start more than once')
-        self._sender = client.PageMessagingAPIClient(
-            aiohttp.ClientSession(),
-            self._page_access_token,
-        )
-        self._message_demuxer = conversation.MessagingEventDemuxer(
-            self._sender, self._conversationalist_factory_map, loop=loop)
+        self._session = aiohttp.ClientSession()
+        self._message_demuxer.start(self._session, loop=loop)
         self._webhook_wrangler = webhook.WebhookWrangler(
             self._message_demuxer.add_messaging_events)
         self._receiver = webhook.WebhookReceiver(

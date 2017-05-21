@@ -17,13 +17,13 @@ class MessagingEventDemuxer:
     Split messaging events based on the sender's ID and give them
     to :class:`Conversation` instances.
     """
-    def __init__(self, messenger_client, *, loop):
+    def __init__(self):
+        self._loop = None
         self._page_clients = {}
+        self._page_tokens = {}
         self._factories = {}
         # Map of (page_id, counterpart_id) -> conversation
         self._convos = {}
-        self._client = messenger_client
-        self._loop = loop
 
     def add_conversationalist_factory(
             self, page_id, page_access_token, conversationalist_factory):
@@ -31,33 +31,45 @@ class MessagingEventDemuxer:
             raise ValueError(
                 'Page ID {0!r} already assigned factory'.format(page_id))
         self._factories[page_id] = conversationalist_factory
-        self._page_clients[page_id] = client.PageMessagingAPIClient(
-            self._session, page_id, page_access_token)
+        self._page_tokens[page_id] = page_access_token
 
     def add_messaging_events(self, page_id, events):
         for event in events:
             convo = self._get_or_create_conversation(page_id, event.sender_id)
+            if convo is None:
+                raise UnhandledPage(
+                    'Received messaging events for page ID {0} lacking '
+                    'configured Conversationalist Factory'.format(page_id)
+                )
             convo.add_messaging_event(event)
+
+    def start(self, session, *, loop):
+        self._loop = loop
+        for page_id in self._factories:
+            self._page_clients[page_id] = client.PageMessagingAPIClient(
+                session, self._page_tokens[page_id])
 
     def _get_or_create_conversation(self, page_id, counterpart_id):
         try:
             convo = self._convos[page_id, counterpart_id]
         except KeyError:
-            replier = client.ConversationReplierAPIClient(
-                self._client, counterpart_id)
             try:
-                factory = self._conversationalist_factory_map[page_id]
+                factory = self._factories[page_id]
             except KeyError:
-                convo = UnhandledConversation(
-                    None, page_id, counterpart_id, loop=self._loop)
-            else:
-                conversationalist = factory(
-                    replier, page_id, counterpart_id, self._loop)
-                convo = Conversation(
-                    conversationalist, page_id, counterpart_id,
-                    loop=self._loop)
+                return None
+            replier = client.ConversationReplierAPIClient(
+                self._page_clients[page_id], counterpart_id)
+            conversationalist = factory(
+                replier, page_id, counterpart_id, self._loop)
+            convo = Conversation(
+                conversationalist, page_id, counterpart_id,
+                loop=self._loop)
             self._convos[page_id, counterpart_id] = convo
         return convo
+
+
+class UnhandledPage(Exception):
+    pass
 
 
 class Conversation:
@@ -78,15 +90,6 @@ class Conversation:
                 'Error in handle_messaging_event for conversation '
                 'on page %r with counterpart %r:',
                 self._counterpart_id)
-
-
-class UnhandledConversation(Conversation):
-    def add_messaging_event(self, event):
-        logger.warning(
-            'Ignoring event received for page ID %r that has no '
-            'conversationalist factory defined',
-            self._page_id
-        )
 
 
 class SerialConversationalist:
