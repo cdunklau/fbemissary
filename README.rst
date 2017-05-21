@@ -15,6 +15,7 @@ Example Usage
     import sys
     import asyncio
     import logging
+    import collections
 
     import aiohttp.web
 
@@ -39,9 +40,12 @@ Example Usage
 
 
     async def start(loop):
-        )
+        conversationalist_factory_map = collections.defaultdict(
+            lambda: EchoConversationalist)
+        # TODO: Refactor page access token stuff to support multiple
+        #       Pages...
         fbmessenger = fbemissary.FacebookPageMessengerBot(
-            EchoConversationalist,
+            conversationalist_factory_map,
             app_secret='<APP_SECRET>',
             verify_token='<WEBHOOK_VERIFY_TOKEN>',
             page_access_token='<PAGE_ACCESS_TOKEN>')

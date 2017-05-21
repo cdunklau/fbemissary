@@ -17,28 +17,38 @@ class MessagingEventDemuxer:
     Split messaging events based on the sender's ID and give them
     to :class:`Conversation` instances.
     """
-    def __init__(self, messenger_client, conversationalist_factory, *, loop):
-        self._conversationalist_factory = conversationalist_factory
+    def __init__(
+            self, messenger_client, conversationalist_factory_map,
+            *, loop):
+        self._conversationalist_factory_map = conversationalist_factory_map
+        # Map of (page_id, counterpart_id) -> conversation
         self._convos = {}
         self._client = messenger_client
         self._loop = loop
 
-    def add_messaging_events(self, events):
+    def add_messaging_events(self, page_id, events):
         for event in events:
-            convo = self._get_or_create_conversation(event.sender_id)
+            convo = self._get_or_create_conversation(page_id, event.sender_id)
             convo.add_messaging_event(event)
 
-    def _get_or_create_conversation(self, counterpart_id):
+    def _get_or_create_conversation(self, page_id, counterpart_id):
         try:
-            convo = self._convos[counterpart_id]
+            convo = self._convos[page_id, counterpart_id]
         except KeyError:
             replier = client.ConversationReplierAPIClient(
                 self._client, counterpart_id)
-            conversationalist = self._conversationalist_factory(
-                replier, counterpart_id, self._loop)
-            convo = Conversation(
-                conversationalist, counterpart_id, loop=self._loop)
-            self._convos[counterpart_id] = convo
+            try:
+                factory = self._conversationalist_factory_map[page_id]
+            except KeyError:
+                convo = UnhandledConversation(
+                    None, page_id, counterpart_id, loop=self._loop)
+            else:
+                conversationalist = factory(
+                    replier, page_id, counterpart_id, self._loop)
+                convo = Conversation(
+                    conversationalist, page_id, counterpart_id,
+                    loop=self._loop)
+            self._convos[page_id, counterpart_id] = convo
         return convo
 
 
@@ -46,8 +56,9 @@ class Conversation:
     """
     A chat with a single user.
     """
-    def __init__(self, conversationalist, counterpart_id, *, loop):
+    def __init__(self, conversationalist, page_id, counterpart_id, *, loop):
         self._conversationalist = conversationalist
+        self._page_id = page_id
         self._counterpart_id = counterpart_id
         self._loop = loop
 
@@ -57,8 +68,17 @@ class Conversation:
         except Exception:
             logger.exception(
                 'Error in handle_messaging_event for conversation '
-                'with %r',
+                'on page %r with counterpart %r:',
                 self._counterpart_id)
+
+
+class UnhandledConversation(Conversation):
+    def add_messaging_event(self, event):
+        logger.warning(
+            'Ignoring event received for page ID %r that has no '
+            'conversationalist factory defined',
+            self._page_id
+        )
 
 
 class SerialConversationalist:
@@ -74,14 +94,17 @@ class SerialConversationalist:
         replier (:class:`fbemissary.client.PageMessagingAPIClient`):
             The page messaging API client to use for sending
             messages etc. to the user.
+        page_id (str):
+            The Facebook Page ID.
         counterpart_id (str):
             The "Page-Scoped ID" of the user on the other end of the
             conversation.
         loop (:class:`asyncio.AbstractEventLoop`):
             The event loop instance.
     """
-    def __init__(self, page_messaging_client, counterpart_id, loop):
+    def __init__(self, page_messaging_client, page_id, counterpart_id, loop):
         self.replier = page_messaging_client
+        self.page_id = page_id
         self.counterpart_id = counterpart_id
         self.loop = loop
         self._events = collections.deque()
@@ -114,5 +137,6 @@ class SerialConversationalist:
                 await self.event_received(event)
             except Exception:
                 logger.exception(
-                    'Error in conversationalist event_received with %r',
-                    self._counterpart_id)
+                    'Error in conversationalist method event_received '
+                    'on page %r with counterpart %r:',
+                    self.page_id, self.counterpart_id)
