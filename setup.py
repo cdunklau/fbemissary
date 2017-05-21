@@ -25,7 +25,7 @@ description = (
 
 setup(
     name='fbemissary',
-    version='0.0.2-dev',
+    version='0.0.2',
     description=description,
     author='Colin Dunklau',
     author_email='colin.dunklau@gmail.com',
