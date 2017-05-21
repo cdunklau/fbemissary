@@ -17,14 +17,22 @@ class MessagingEventDemuxer:
     Split messaging events based on the sender's ID and give them
     to :class:`Conversation` instances.
     """
-    def __init__(
-            self, messenger_client, conversationalist_factory_map,
-            *, loop):
-        self._conversationalist_factory_map = conversationalist_factory_map
+    def __init__(self, messenger_client, *, loop):
+        self._page_clients = {}
+        self._factories = {}
         # Map of (page_id, counterpart_id) -> conversation
         self._convos = {}
         self._client = messenger_client
         self._loop = loop
+
+    def add_conversationalist_factory(
+            self, page_id, page_access_token, conversationalist_factory):
+        if page_id in self._factories:
+            raise ValueError(
+                'Page ID {0!r} already assigned factory'.format(page_id))
+        self._factories[page_id] = conversationalist_factory
+        self._page_clients[page_id] = client.PageMessagingAPIClient(
+            self._session, page_id, page_access_token)
 
     def add_messaging_events(self, page_id, events):
         for event in events:
