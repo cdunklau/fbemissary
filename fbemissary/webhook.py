@@ -104,6 +104,11 @@ class WebhookWrangler:
             if 'messaging' not in entry:
                 logger.warning('Ignoring non-messaging entry: %r', entry)
                 continue
+            # FIXME: This ignores the page ID, so it prevents dispatching
+            # based on the page ID at this level.
+            logger.debug(
+                'Received messaging entry for page ID %r',
+                entry['id'])
             event_structures = entry['messaging']
             logger.debug(
                 'Processing %d messaging event structures',
