@@ -1,3 +1,5 @@
+.. image:: https://img.shields.io/pypi/v/fbemissary.svg   :target:
+
 fbemissary
 ##########
 
