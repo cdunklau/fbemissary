@@ -26,12 +26,15 @@ class MessagingEventDemuxer:
         self._convos = {}
 
     def add_conversationalist_factory(
-            self, page_id, page_access_token, conversationalist_factory):
+            self, page_id, page_access_token, conversationalist_factory,
+            preinit_conversations):
         if page_id in self._factories:
             raise ValueError(
                 'Page ID {0!r} already assigned factory'.format(page_id))
         self._factories[page_id] = conversationalist_factory
         self._page_tokens[page_id] = page_access_token
+        for counterpart_id in preinit_conversations:
+            self._get_or_create_conversation(page_id, counterpart_id)
 
     def add_messaging_events(self, page_id, events):
         for event in events:

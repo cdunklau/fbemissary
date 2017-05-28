@@ -39,7 +39,8 @@ class FacebookPageMessengerBot:
         self._started = False
 
     def add_conversationalist_factory(
-            self, page_id, page_access_token, conversationalist_factory):
+            self, page_id, page_access_token, conversationalist_factory,
+            preinit_conversations=()):
         """
         Arguments:
             page_id (str):
@@ -52,6 +53,9 @@ class FacebookPageMessengerBot:
                 A Conversationalist Factory is a callable supporting
                 four arguments which returns a "Conversationalist"
                 object. The interfaces are described below.
+            preinit_conversations (list of str):
+                A list of counterpart IDs, used to pre-instantiate
+                conversationalists
 
         Conversationalist Factories will be called with four arguments:
         an instance of
@@ -78,7 +82,8 @@ class FacebookPageMessengerBot:
             # TODO: Change this to a custom exception
             raise RuntimeError('Cannot change config after start')
         self._message_demuxer.add_conversationalist_factory(
-            page_id, page_access_token, conversationalist_factory)
+            page_id, page_access_token, conversationalist_factory,
+            preinit_conversations)
 
     async def start(self, webapp_mountpoint, webapp_router, *, loop):
         if self._started:
