@@ -50,23 +50,29 @@ class FacebookPageMessengerBot:
                 The access token for the Facebook Page specified by
                 the ``page_id``
             conversationalist_factory:
-                A Conversationalist Factory is a callable supporting
-                four arguments which returns a "Conversationalist"
-                object. The interfaces are described below.
+                A object with a coroutine method called
+                ``make_conversationalist`` which supports four
+                arguments and returns a "Conversationalist" object.
+                The interfaces are described below.
             preinit_conversations (list of str):
                 A list of counterpart IDs, used to pre-instantiate
                 conversationalists
 
-        Conversationalist Factories will be called with four arguments:
-        an instance of
+        Conversationalist Factories will have their
+        ``make_conversationalist`` coroutine method be called with four
+        arguments: an instance of
         :class:`fbemissary.client.ConversationReplierAPIClient` (for
         sending messages back to the user), the Facebook Page ID,
         the page-scoped ID of the conversation counterpart (the user on
         the other end of the conversation), and the event loop.
+        As this method can be called during the processing of the
+        webhook request from Facebook, it must complete quickly, or
+        Facebook will abandon the attempt and try again.
 
-        The factory must return a Conversationalist object: an
-        object with a ``handle_messaging_event`` method
-        (not a coroutine!) that accepts a messaging event.
+        The factory's method coroutine must result in a
+        Conversationalist object: an object with a
+        ``handle_messaging_event`` method (not a coroutine!) that
+        accepts a messaging event.
 
         A Conversationalist is an object that receives messaging
         events (described in the documentation for
@@ -90,7 +96,7 @@ class FacebookPageMessengerBot:
             # TODO: Change this to a custom exception
             raise RuntimeError('Cannot start more than once')
         self._session = aiohttp.ClientSession()
-        self._message_demuxer.start(self._session, loop=loop)
+        await self._message_demuxer.start(self._session, loop=loop)
         self._webhook_wrangler = webhook.WebhookWrangler(
             self._message_demuxer.add_messaging_events)
         self._receiver = webhook.WebhookReceiver(

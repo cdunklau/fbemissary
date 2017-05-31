@@ -36,9 +36,10 @@ class MessagingEventDemuxer:
         self._page_tokens[page_id] = page_access_token
         self._preinit_convo[page_id] = preinit_conversations
 
-    def add_messaging_events(self, page_id, events):
+    async def add_messaging_events(self, page_id, events):
         for event in events:
-            convo = self._get_or_create_conversation(page_id, event.sender_id)
+            convo = await self._get_or_create_conversation(
+                page_id, event.sender_id)
             if convo is None:
                 raise UnhandledPage(
                     'Received messaging events for page ID {0} lacking '
@@ -46,17 +47,17 @@ class MessagingEventDemuxer:
                 )
             convo.add_messaging_event(event)
 
-    def start(self, session, *, loop):
+    async def start(self, session, *, loop):
         self._loop = loop
         for page_id in self._factories:
             self._page_clients[page_id] = client.PageMessagingAPIClient(
                 session, self._page_tokens[page_id])
             preinit_conversations = self._preinit_convo[page_id]
             for counterpart_id in preinit_conversations:
-                self._get_or_create_conversation(page_id, counterpart_id)
+                await self._get_or_create_conversation(page_id, counterpart_id)
         self._preinit_convo = None
 
-    def _get_or_create_conversation(self, page_id, counterpart_id):
+    async def _get_or_create_conversation(self, page_id, counterpart_id):
         try:
             convo = self._convos[page_id, counterpart_id]
         except KeyError:
@@ -66,7 +67,7 @@ class MessagingEventDemuxer:
                 return None
             replier = client.ConversationReplierAPIClient(
                 self._page_clients[page_id], counterpart_id)
-            conversationalist = factory(
+            conversationalist = await factory.make_conversationalist(
                 replier, page_id, counterpart_id, self._loop)
             convo = Conversation(
                 conversationalist, page_id, counterpart_id,
@@ -97,6 +98,18 @@ class Conversation:
                 'Error in handle_messaging_event for conversation '
                 'on page %r with counterpart %r:',
                 self._counterpart_id)
+
+
+class ConversationalistFactory:
+    conversationalist_class = None
+
+    def __init__(self, conversationalist_class):
+        self.conversationalist = conversationalist_class
+
+    async def make_conversationalist(
+            self, page_messaging_client, page_id, counterpart_id, loop):
+        return self.conversationalist_class(
+            page_messaging_client, page_id, counterpart_id, loop)
 
 
 class SerialConversationalist:

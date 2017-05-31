@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class WebhookReceiver:
     """
     Receive Facebook webhooks and dispatch the received structure to
-    the ``webhook_structure_handler``.
+    the ``webhook_structure_handler`` coroutine callable.
     """
     def __init__(self, app_secret, verify_token, webhook_structure_handler,
                  *, loop):
@@ -50,7 +50,7 @@ class WebhookReceiver:
             return aiohttp.web.Response(status=403)
         structure = await request.json()
         logger.debug('Received update %r', await request.read())
-        self._handler.handle_webhook_structure(structure)
+        await self._handler.handle_webhook_structure(structure)
         return aiohttp.web.Response(status=200)
 
     async def _has_valid_signature(self, request):
@@ -71,7 +71,7 @@ class WebhookWrangler:
         }
         self._messaging_events_received = messaging_events_received
 
-    def handle_webhook_structure(self, structure):
+    async def handle_webhook_structure(self, structure):
         try:
             objtype = structure['object']
         except KeyError:
@@ -82,9 +82,9 @@ class WebhookWrangler:
         if handler is None:
             logger.warning('No handler for webhook object type %r', objtype)
             return
-        handler(structure)
+        await handler(structure)
 
-    def _handle_page_structure(self, structure):
+    async def _handle_page_structure(self, structure):
         assert structure['object'] == 'page'
         extra_keys = structure.keys() - {'object', 'entry'} 
         if extra_keys:
@@ -97,9 +97,9 @@ class WebhookWrangler:
                 "No 'entry' key in webhook structure: %r", structure)
             return
         logger.debug('Got %d page webhook entries', len(entry_structures))
-        self._handle_page_entries(entry_structures)
+        await self._handle_page_entries(entry_structures)
 
-    def _handle_page_entries(self, entry_structures):
+    async def _handle_page_entries(self, entry_structures):
         for entry in entry_structures:
             if 'messaging' not in entry:
                 logger.warning('Ignoring non-messaging entry: %r', entry)
@@ -121,4 +121,4 @@ class WebhookWrangler:
                         event_structure)
                 else:
                     events.append(event)
-            self._messaging_events_received(page_id, events)
+            await self._messaging_events_received(page_id, events)

@@ -5,7 +5,10 @@
 fbemissary - A bot framework for the Facebook Messenger platform
 """
 from .core import FacebookPageMessengerBot
-from .conversation import SerialConversationalist
+from .conversation import (
+    ConversationalistFactory,
+    SerialConversationalist
+)
 from .models import (
     ReceivedMessage,
     AttachmentType,

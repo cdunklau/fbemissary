@@ -49,10 +49,11 @@ Example Usage
         fbmessenger = fbemissary.FacebookPageMessengerBot(
             app_secret='<APP_SECRET>',
             verify_token='<WEBHOOK_VERIFY_TOKEN>')
+        factory = fbemissary.ConversationalistFactory(EchoConversationalist)
         fbmessenger.add_conversationalist_factory(
             page_id='<PAGE_ID>', 
             page_access_token='<PAGE_ACCESS_TOKEN>',
-            conversationalist_factory=EchoConversationalist)
+            conversationalist_factory=factory)
         webapp = aiohttp.web.Application()
         await fbmessenger.start(
             '/webhooks/facebook-messenger',
