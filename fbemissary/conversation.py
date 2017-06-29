@@ -22,6 +22,7 @@ class MessagingEventDemuxer:
         self._page_clients = {}
         self._page_tokens = {}
         self._factories = {}
+        self._preinit_convo = {}
         # Map of (page_id, counterpart_id) -> conversation
         self._convos = {}
 
@@ -33,8 +34,7 @@ class MessagingEventDemuxer:
                 'Page ID {0!r} already assigned factory'.format(page_id))
         self._factories[page_id] = conversationalist_factory
         self._page_tokens[page_id] = page_access_token
-        for counterpart_id in preinit_conversations:
-            self._get_or_create_conversation(page_id, counterpart_id)
+        self._preinit_convo[page_id] = preinit_conversations
 
     def add_messaging_events(self, page_id, events):
         for event in events:
@@ -51,6 +51,10 @@ class MessagingEventDemuxer:
         for page_id in self._factories:
             self._page_clients[page_id] = client.PageMessagingAPIClient(
                 session, self._page_tokens[page_id])
+            preinit_conversations = self._preinit_convo[page_id]
+            for counterpart_id in preinit_conversations:
+                self._get_or_create_conversation(page_id, counterpart_id)
+        self._preinit_convo = None
 
     def _get_or_create_conversation(self, page_id, counterpart_id):
         try:
